@@ -10,29 +10,18 @@ use gpui::{
 };
 
 #[cfg(feature = "fiber")]
-fn format_bytes(bytes: usize) -> String {
-    if bytes >= 1_000_000 {
-        format!("{:.2} MB", bytes as f64 / 1_000_000.0)
-    } else if bytes >= 1_000 {
-        format!("{:.1} KB", bytes as f64 / 1_000.0)
-    } else {
-        format!("{} B", bytes)
-    }
-}
-
-#[cfg(feature = "fiber")]
 fn log_frame(diag: &gpui::FrameDiagnostics) {
     use std::sync::Once;
     static INIT: Once = Once::new();
 
     INIT.call_once(|| {
         if let Ok(mut f) = OpenOptions::new().create(true).write(true).truncate(true).open("frame_log.csv") {
-            let _ = writeln!(f, "frame,paint_fibers,paint_replayed,prepaint_fibers,prepaint_replayed,mutated_segments,total_segments,hitboxes,hitboxes_rebuilt,upload_bytes,quads,mono_sprites,poly_sprites");
+            let _ = writeln!(f, "frame,paint_fibers,paint_replayed,prepaint_fibers,prepaint_replayed,mutated_segments,total_segments,hitboxes,hitboxes_rebuilt,upload_bytes,quads,mono_sprites,poly_sprites,reconcile_us,layout_us,prepaint_us,paint_us,total_us");
         }
     });
 
     if let Ok(mut f) = OpenOptions::new().append(true).open("frame_log.csv") {
-        let _ = writeln!(f, "{},{},{},{},{},{},{},{},{},{},{},{},{}",
+        let _ = writeln!(f, "{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}",
             diag.frame_number,
             diag.paint_fibers,
             diag.paint_replayed_subtrees,
@@ -46,6 +35,11 @@ fn log_frame(diag: &gpui::FrameDiagnostics) {
             diag.quads,
             diag.monochrome_sprites,
             diag.polychrome_sprites,
+            diag.reconcile_time.as_micros(),
+            diag.layout_time.as_micros(),
+            diag.prepaint_time.as_micros(),
+            diag.paint_time.as_micros(),
+            diag.total_time.as_micros(),
         );
     }
 }
@@ -144,59 +138,13 @@ impl Render for FpsView {
         {
             let diag = window.frame_diagnostics();
             log_frame(&diag);
-
-            let section = |title: &str| {
-                div()
-                    .text_color(rgb(0xffff00))
-                    .pt_2()
-                    .child(title.to_string())
-            };
-
-            let line = |label: &str, value: String| {
-                div()
-                    .flex()
-                    .flex_row()
-                    .justify_between()
-                    .gap_4()
-                    .child(div().text_color(rgb(0x888888)).child(label.to_string()))
-                    .child(div().text_color(rgb(0xffffff)).child(value))
-            };
-
-            div()
-                .flex()
-                .flex_col()
-                .text_xs()
-                .child(
-                    div()
-                        .text_color(rgb(0x00ff00))
-                        .font_weight(gpui::FontWeight::BOLD)
-                        .child(format!("Frame #{} @ {:.0} FPS", diag.frame_number, self.render_fps.fps)),
-                )
-                .child(section("CPU Paint"))
-                .child(line("paint", format!("{} / {} repl", diag.paint_fibers, diag.paint_replayed_subtrees)))
-                .child(line("prepaint", format!("{} / {} repl", diag.prepaint_fibers, diag.prepaint_replayed_subtrees)))
-                .child(section("Scene"))
-                .child(line("segments", format!("{} / {}", diag.mutated_pool_segments, diag.total_pool_segments)))
-                .child(line("hitboxes", format!("{} (rebuilt: {})", diag.hitboxes_in_snapshot, diag.hitboxes_snapshot_rebuilt)))
-                .child(section("GPU"))
-                .child(line("upload", format_bytes(diag.estimated_instance_upload_bytes)))
-                .child(line("quads", diag.quads.to_string()))
-                .child(line("sprites", format!("{} / {}", diag.monochrome_sprites, diag.polychrome_sprites)))
         }
 
-        #[cfg(not(feature = "fiber"))]
-        {
-            div()
-                .flex()
-                .flex_col()
-                .text_xs()
-                .child(
-                    div()
-                        .text_color(rgb(0x00ff00))
-                        .font_weight(gpui::FontWeight::BOLD)
-                        .child(format!("{:.0} FPS", self.render_fps.fps)),
-                )
-        }
+        div()
+            .text_color(rgb(0x00ff00))
+            .font_weight(gpui::FontWeight::BOLD)
+            .text_xs()
+            .child(format!("{:.0} FPS", self.render_fps.fps))
     }
 }
 
