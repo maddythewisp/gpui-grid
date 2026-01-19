@@ -16,13 +16,14 @@ fn log_frame(diag: &gpui::FrameDiagnostics) {
 
     INIT.call_once(|| {
         if let Ok(mut f) = OpenOptions::new().create(true).write(true).truncate(true).open("frame_log.csv") {
-            let _ = writeln!(f, "frame,paint_fibers,paint_replayed,prepaint_fibers,prepaint_replayed,mutated_segments,total_segments,hitboxes,hitboxes_rebuilt,upload_bytes,quads,mono_sprites,poly_sprites,reconcile_us,layout_us,prepaint_us,paint_us,total_us");
+            let _ = writeln!(f, "frame,layout_fibers,paint_fibers,paint_replayed,prepaint_fibers,prepaint_replayed,mutated_segments,total_segments,hitboxes,hitboxes_rebuilt,upload_bytes,quads,mono_sprites,poly_sprites,reconcile_us,layout_us,prepaint_us,paint_us,total_us");
         }
     });
 
     if let Ok(mut f) = OpenOptions::new().append(true).open("frame_log.csv") {
-        let _ = writeln!(f, "{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}",
+        let _ = writeln!(f, "{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}",
             diag.frame_number,
+            diag.layout_fibers,
             diag.paint_fibers,
             diag.paint_replayed_subtrees,
             diag.prepaint_fibers,
