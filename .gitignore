@@ -1,4 +1,6 @@
 /target/
 /logs/
 Cargo.lock
-frame_log.csv
+
+frame_log_debug.csv
+frame_log_release.csv
