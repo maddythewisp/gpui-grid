@@ -10,17 +10,27 @@ use gpui::{
 };
 
 #[cfg(feature = "fiber")]
+fn csv_filename() -> &'static str {
+    if cfg!(debug_assertions) {
+        "frame_log_debug.csv"
+    } else {
+        "frame_log_release.csv"
+    }
+}
+
+#[cfg(feature = "fiber")]
 fn log_frame(diag: &gpui::FrameDiagnostics) {
     use std::sync::Once;
     static INIT: Once = Once::new();
 
+    let filename = csv_filename();
     INIT.call_once(|| {
-        if let Ok(mut f) = OpenOptions::new().create(true).write(true).truncate(true).open("frame_log.csv") {
+        if let Ok(mut f) = OpenOptions::new().create(true).write(true).truncate(true).open(filename) {
             let _ = writeln!(f, "frame,layout_fibers,paint_fibers,paint_replayed,prepaint_fibers,prepaint_replayed,mutated_segments,total_segments,hitboxes,hitboxes_rebuilt,upload_bytes,quads,mono_sprites,poly_sprites,reconcile_us,layout_us,prepaint_us,paint_us,total_us");
         }
     });
 
-    if let Ok(mut f) = OpenOptions::new().append(true).open("frame_log.csv") {
+    if let Ok(mut f) = OpenOptions::new().append(true).open(filename) {
         let _ = writeln!(f, "{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}",
             diag.frame_number,
             diag.layout_fibers,
@@ -145,7 +155,7 @@ impl Render for FpsView {
             .text_color(rgb(0x00ff00))
             .font_weight(gpui::FontWeight::BOLD)
             .text_xs()
-            .child(format!("{:.0} FPS", self.render_fps.fps))
+            .child(format!("{:.2} FPS", self.render_fps.fps))
     }
 }
 
