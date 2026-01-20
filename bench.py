@@ -87,16 +87,38 @@ def run_benchmark(duration_secs: float = 5.0, debug: bool = False, build: bool =
 def analyze_csv(csv_path: Path) -> Optional[FrameStats]:
     """Analyze the frame timing CSV and return statistics."""
 
+    def parse_int(row: dict, key: str) -> Optional[int]:
+        value = row.get(key)
+        if value is None:
+            return None
+        value = value.strip()
+        if value == "":
+            return None
+        try:
+            return int(value)
+        except ValueError:
+            return None
+
     frames = []
     with open(csv_path, 'r') as f:
         reader = csv.DictReader(f)
         for row in reader:
-            frames.append({
-                'frame': int(row['frame']),
-                'layout_fibers': int(row['layout_fibers']),
-                'layout_us': int(row['layout_us']),
-                'total_us': int(row['total_us']),
-            })
+            frame = parse_int(row, "frame")
+            layout_fibers = parse_int(row, "layout_fibers")
+            layout_us = parse_int(row, "layout_us")
+            total_us = parse_int(row, "total_us")
+            if frame is None or layout_fibers is None or layout_us is None or total_us is None:
+                # The benchmark can terminate while a row is being written, leaving a partial line.
+                continue
+
+            frames.append(
+                {
+                    "frame": frame,
+                    "layout_fibers": layout_fibers,
+                    "layout_us": layout_us,
+                    "total_us": total_us,
+                }
+            )
 
     if len(frames) < 10:
         print(f"Warning: Only {len(frames)} frames captured")

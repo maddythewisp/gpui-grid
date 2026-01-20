@@ -2,6 +2,7 @@ use std::collections::VecDeque;
 use std::env;
 use std::fs::OpenOptions;
 use std::io::Write;
+use std::sync::{Mutex, OnceLock};
 use std::time::Instant;
 
 use gpui::{
@@ -20,18 +21,25 @@ fn csv_filename() -> &'static str {
 
 #[cfg(feature = "fiber")]
 fn log_frame(diag: &gpui::FrameDiagnostics) {
-    use std::sync::Once;
-    static INIT: Once = Once::new();
+    static FRAME_LOG: OnceLock<Mutex<std::fs::File>> = OnceLock::new();
 
-    let filename = csv_filename();
-    INIT.call_once(|| {
-        if let Ok(mut f) = OpenOptions::new().create(true).write(true).truncate(true).open(filename) {
-            let _ = writeln!(f, "frame,layout_fibers,paint_fibers,paint_replayed,prepaint_fibers,prepaint_replayed,mutated_segments,total_segments,hitboxes,hitboxes_rebuilt,upload_bytes,quads,mono_sprites,poly_sprites,reconcile_us,layout_us,prepaint_us,paint_us,total_us");
-        }
+    let log = FRAME_LOG.get_or_init(|| {
+        let filename = csv_filename();
+        let mut file = OpenOptions::new()
+            .create(true)
+            .write(true)
+            .truncate(true)
+            .open(filename)
+            .expect("open frame log");
+
+        let _ = file.write_all(b"frame,layout_fibers,paint_fibers,paint_replayed,prepaint_fibers,prepaint_replayed,mutated_segments,total_segments,hitboxes,hitboxes_rebuilt,upload_bytes,quads,mono_sprites,poly_sprites,reconcile_us,layout_us,prepaint_us,paint_us,total_us\n");
+
+        Mutex::new(file)
     });
 
-    if let Ok(mut f) = OpenOptions::new().append(true).open(filename) {
-        let _ = writeln!(f, "{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}",
+    if let Ok(mut file) = log.lock() {
+        let line = format!(
+            "{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}\n",
             diag.frame_number,
             diag.layout_fibers,
             diag.paint_fibers,
@@ -52,6 +60,8 @@ fn log_frame(diag: &gpui::FrameDiagnostics) {
             diag.paint_time.as_micros(),
             diag.total_time.as_micros(),
         );
+
+        let _ = file.write_all(line.as_bytes());
     }
 }
 
@@ -75,7 +85,7 @@ fn env_f32(name: &str, default: f32) -> f32 {
         .unwrap_or(default)
 }
 
-const DEFAULT_ROWS: usize = 50;
+const DEFAULT_ROWS: usize = if cfg!(debug_assertions) { 300 } else { 800 };
 const DEFAULT_CELL_SIZE: f32 = 32.0;
 const DEFAULT_WIDTH: f32 = 800.0;
 const DEFAULT_HEIGHT: f32 = 600.0;
