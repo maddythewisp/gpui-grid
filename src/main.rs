@@ -32,14 +32,14 @@ fn log_frame(diag: &gpui::FrameDiagnostics) {
             .open(filename)
             .expect("open frame log");
 
-        let _ = file.write_all(b"frame,layout_fibers,paint_fibers,paint_replayed,prepaint_fibers,prepaint_replayed,mutated_segments,total_segments,hitboxes,hitboxes_rebuilt,upload_bytes,quads,mono_sprites,poly_sprites,reconcile_us,intrinsic_sizing_us,layout_us,prepaint_us,paint_us,total_us\n");
+        let _ = file.write_all(b"frame,layout_fibers,paint_fibers,paint_replayed,prepaint_fibers,prepaint_replayed,mutated_segments,total_segments,hitboxes,hitboxes_rebuilt,upload_bytes,quads,mono_sprites,poly_sprites,reconcile_us,intrinsic_sizing_us,layout_us,prepaint_us,paint_us,cleanup_us,total_us\n");
 
         Mutex::new(file)
     });
 
     if let Ok(mut file) = log.lock() {
         let line = format!(
-            "{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}\n",
+            "{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}\n",
             diag.frame_number,
             diag.layout_fibers,
             diag.paint_fibers,
@@ -59,6 +59,7 @@ fn log_frame(diag: &gpui::FrameDiagnostics) {
             diag.layout_time.as_micros(),
             diag.prepaint_time.as_micros(),
             diag.paint_time.as_micros(),
+            diag.cleanup_time.as_micros(),
             diag.total_time.as_micros(),
         );
 
