@@ -88,9 +88,9 @@ fn env_f32(name: &str, default: f32) -> f32 {
 }
 
 const DEFAULT_ROWS: usize = if cfg!(debug_assertions) { 300 } else { 800 };
-const DEFAULT_CELL_SIZE: f32 = 32.0;
-const DEFAULT_WIDTH: f32 = 800.0;
-const DEFAULT_HEIGHT: f32 = 600.0;
+const DEFAULT_CELL_SIZE: f32 = 42.0;
+const DEFAULT_WIDTH: f32 = 960.0;
+const DEFAULT_HEIGHT: f32 = 1080.0;
 const CELL_GAP: f32 = 4.0;
 const GRID_PADDING: f32 = 16.0;
 const FRAME_HISTORY: usize = 60;

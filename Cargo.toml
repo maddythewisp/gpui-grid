@@ -9,7 +9,7 @@ fiber = []
 
 [dependencies]
 # Switch between upstream (git) and local fiber (path) by commenting/uncommenting:
-# gpui = { git = "https://github.com/zed-industries/zed", package = "gpui" }
-gpui = { path = "../zed/crates/gpui", package = "gpui_rn", features = ["diagnostics"] }
+# gpui = { git = "https://github.com/zed-industries/zed", rev = "8870bd94f6", package = "gpui" }
+gpui = { path = "../zed/crates/gpui", features = ["diagnostics"] }
 log = "0.4"
 env_logger = "0.11"
